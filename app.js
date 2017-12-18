@@ -81,7 +81,28 @@ self.shootBullet = function(angle){
     else
       self.speedY = 0;
   }
+
+
+  self.getInitPackage = function(){
+    return{
+      id:self.id,
+      x:self.x,
+      y:self.y,
+      number:self.number,
+    };
+  }
+
+  self.getUpdatePackage = function(){
+    return{
+      id:self.id,
+      x:self.x,
+      y:self.y,
+      //number:self.number,
+    };
+  }
   Player.list[id] = self;
+
+  initPackage.player.push(self.getInitPackage());
   return self;
 }
 Player.list = {};
@@ -103,20 +124,28 @@ Player.onConnect = function(socket){
       else if(data.inputId === 'mouseAngle')
         player.mouseAngle = data.state;
       });
+
+      socket.emit('init',{
+        player:Player.getInitialPackage(),
+        bullet:Bullet.getInitialPackage(),
+      });
+}
+Player.getInitialPackage = function(){
+  var players = [];
+  for(var i in Player.list)
+    players.push(Player.list[i].getInitPackage());
+  return players;
 }
 Player.onDisconnect = function(socket){
   delete Player.list[socket.id];
+  removePackage.player.push(socket.id);
 }
 Player.update = function(){
   var pack = [];
   for(var i in Player.list){
     var player = Player.list[i];
     player.update();
-    pack.push({
-      x:player.x,
-      y:player.y,
-      number:player.number
-    });
+    pack.push(player.getUpdatePackage());
   }
   return pack;
 }
@@ -144,34 +173,51 @@ var Bullet = function(parent,angle){
         }
       }
   }
+  self.getInitPackage = function(){
+    return{
+      id:self.id,
+      x:self.x,
+      y:self.y,
+    };
+  }
+  self.getUpdatePackage = function(){
+    return{
+      id:self.id,
+      x:self.x,
+      y:self.y,
+    }
+  }
   Bullet.list[self.id] = self;
+  initPackage.bullet.push(self.getInitPackage());
   return self;
 }
 Bullet.list = {};
 
 Bullet.update = function(){
-
-
   var pack = [];
   for(var i in Bullet.list){
     var bullet = Bullet.list[i];
     bullet.update();
-    if(bullet.toRemove == true)
+    if(bullet.toRemove == true){
       delete Bullet.list[i];
-    pack.push({
-      x:bullet.x,
-      y:bullet.y,
-    });
+      removePackage.bullet.push(bullet.id);
+    } else
+    pack.push(bullet.getUpdatePackage());
   }
   return pack;
 }
-
-var USERS = {
+Bullet.getInitialPackage = function(){
+  var bullets = [];
+  for(var i in Bullet.list)
+    bullets.push(Bullet.list[i].getInitPackage());
+  return bullets;
+}
+/*var USERS = {
   //username:Password
   "bob":"pass",
-}
+}*/
 
-var isValidPassword= function(data, cb){
+function isValidPassword(data, cb){
   db.users.find({username:data.username,password:data.password},function(err,res){
     if(res.length > 0)
       cb(true);
@@ -179,7 +225,7 @@ var isValidPassword= function(data, cb){
         cb(false);
   });
 }
-var isUsernameTaken = function(data, cb){
+function isUsernameTaken(data, cb){
   db.users.find({username:data.username},function(err,res){
     if(res.length > 0)
       cb(true);
@@ -187,7 +233,7 @@ var isUsernameTaken = function(data, cb){
         cb(false);
   });
 }
-var addUser = function(data, cb){
+function addUser(data, cb){
   db.users.insert({username:data.username,password:data.password},function(err){
     cb();
   });
@@ -244,7 +290,8 @@ io.sockets.on('connection', function(socket){
 
 });
 
-
+var initPackage = {player:[],bullet:[]};
+var removePackage = {player:[],bullet:[]};
 
 
 setInterval(function() {
@@ -254,6 +301,12 @@ setInterval(function() {
   }
   for(var i in SOCKET_LIST){
     var socket = SOCKET_LIST[i];
-    socket.emit('newPositions', pack);
+    socket.emit('init',initPackage);
+    socket.emit('update', pack);
+    socket.emit('remove', removePackage);
   }
+  initPackage.player = [];
+  initPackage.bullet = [];
+  removePackage.player = [];
+  removePackage.bullet = [];
 } ,1000/25);
