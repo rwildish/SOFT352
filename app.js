@@ -7,9 +7,9 @@ var app = express();
 var server = require('http').Server(app);
 
 app.get('/', function(req, res) {
-    res.sendFile(__dirname + '/client/index.html');
+    res.sendFile(__dirname + '/Client/index.html');
 });
-app.use('/client', express.static(__dirname + '/client'));
+app.use('/Client', express.static(__dirname + '/Client'));
 
 server.listen(2000);
 
@@ -48,6 +48,9 @@ var Player = function(id){
   self.pressingMouse1 = false;
   self.mouseAngle = 0;
   self.maxSpeed = 10;
+  self.hp = 5;
+  self.maxHp = 5;
+  self.score = 0;
 
   var super_update = self.update;
   self.update = function(){
@@ -89,6 +92,9 @@ self.shootBullet = function(angle){
       x:self.x,
       y:self.y,
       number:self.number,
+      hp:self.hp,
+      maxHp:self.maxHp,
+      score:self.score,
     };
   }
 
@@ -97,6 +103,8 @@ self.shootBullet = function(angle){
       id:self.id,
       x:self.x,
       y:self.y,
+      hp:self.hp,
+      score:self.score,
       //number:self.number,
     };
   }
@@ -126,6 +134,7 @@ Player.onConnect = function(socket){
       });
 
       socket.emit('init',{
+        identity:socket.id,
         player:Player.getInitialPackage(),
         bullet:Bullet.getInitialPackage(),
       });
@@ -168,7 +177,17 @@ var Bullet = function(parent,angle){
       for(var i in Player.list){
         var p = Player.list[i];
         if(self.getDistance(p) < 32 && self.parent !== p.id)
-        { //handle collision hp--;
+        {
+          p.hp -= 1;
+          var shooter = Player.list[self.parent];
+          if(p.hp <= 0){
+            if(shooter)
+              shooter.score += 10;
+            p.hp = p.maxHp;
+            p.x = Math.random() * 500;
+            p.y = Math.random() * 500;
+          }
+
           self.toRemove = true;
         }
       }

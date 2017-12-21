@@ -18,7 +18,8 @@
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
-
+  var WIDTH = 500;
+  var HEIGHT = 500;
   var socket = io();
   //sign
   var signDiv = document.getElementById('signDiv');
@@ -71,12 +72,42 @@
           chatInput.value = '';
         }
 
+        var images = {};
+        images.player = new Image();
+        images.player.src = '/Client/Image/friendly.png';
+        images.enemy = new Image();
+        images.enemy.src = '/Client/Image/enemy.png';
+        images.bullet = new Image();
+        images.bullet.src = '/Client/Image/bullet.png';
+        images.map = new Image();
+        images.map.src = '/Client/Image/map.png';
+
         var Player = function(initPackage){
           var self = {};
           self.id = initPackage.id;
           self.number = initPackage.number;
           self.x = initPackage.x;
           self.y = initPackage.y;
+          self.hp = initPackage.hp;
+          self.maxHp = initPackage.maxHp;
+          self.score = initPackage.score;
+
+          self.draw = function(){
+            var playerInitX = self.x - Player.list[identity].x + WIDTH/2;
+            var playerInitY = self.y - Player.list[identity].y + HEIGHT/2;
+
+            var hpBar = 30 * self.hp / self.maxHp;
+            ctx.fillStyle = 'red';
+            ctx.fillRect(playerInitX - hpBar/2, playerInitY - 40, hpBar, 4);
+            //ctx.fillText(self.number,self.x,self.y);
+
+            var width = images.player.width/30;
+            var height = images.player.height/30;
+
+            ctx.drawImage(images.player,0,0,images.player.width,
+            images.player.height,playerInitX-width/2,playerInitY-height/2,width,height);
+
+          }
           Player.list[self.id] = self;
           return self;
         }
@@ -87,12 +118,27 @@
           self.id = initPackage.id;
           self.x = initPackage.x;
           self.y = initPackage.y;
+
+          self.draw = function(){
+            //ctx.fillRect(self.x-5, self.y-5, 10, 10);
+            var width = images.bullet.width/10;
+            var height = images.bullet.height/10;
+            var bulletInitX = self.x - Player.list[identity].x + WIDTH/2;
+            var bulletInitY = self.y - Player.list[identity].y + HEIGHT/2;
+            ctx.drawImage(images.bullet,0,0,images.bullet.width,images.bullet.height,
+            bulletInitX-width/2,bulletInitY-height/2,width,height);
+          }
+
           Bullet.list[self.id] = self;
           return self;
         }
         Bullet.list = {};
 
+        var identity = null;
+
         socket.on('init', function(data){
+          if(data.identity)
+            identity = data.identity;
           for(var i = 0; i < data.player.length; i++)
             new Player(data.player[i]);
 
@@ -109,6 +155,10 @@
                 updatedPlayer.x = pack.x;
               if(pack.y !== undefined)
                 updatedPlayer.y = pack.y;
+                if(pack.hp !== undefined)
+                  updatedPlayer.hp = pack.hp;
+                if(pack.score !== undefined)
+                  updatedPlayer.score = pack.score;
             }
           }
           for(var i = 0; i < data.bullet.length; i++)
@@ -133,22 +183,27 @@
 
 
         setInterval(function(){
+          if(!identity)
+            return;
           ctx.clearRect(0,0,500,500);
+          drawMap();
+          drawScore();
           for(var i in Player.list)
-            ctx.fillText(Player.list[i].number,Player.list[i].x,Player.list[i].y);
-
+            Player.list[i].draw();
           for(var i in Bullet.list)
-            ctx.fillRect(Bullet.list[i].x-5, Bullet.list[i].y-5, 10, 10);
+            Bullet.list[i].draw();
         },40);
 
-        /*socket.on('newPositions',function(data){
-          ctx.clearRect(0,0,500,500);
-          for(var i = 0; i < data.player.length; i++)
-            ctx.fillText(data.player[i].number, data.player[i].x, data.player[i].y);
+        function drawMap(){
+          var mapX = WIDTH/2 - Player.list[identity].x;
+          var mapY = HEIGHT/2 - Player.list[identity].y;
+          ctx.drawImage(images.map,mapX,mapY);
+        }
 
-          for(var i = 0; i < data.bullet.length; i++)
-            ctx.fillRect(data.bullet[i].x-5, data.bullet[i].y-5, 10, 10);
-        });*/
+        function drawScore(){
+          ctx.fillStyle = 'blue';
+          ctx.fillText(Player.list[identity].score, 10, 30);
+        }
 
         document.onkeydown = function(event) {
           if(event.keyCode === 68) //d
