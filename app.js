@@ -11,7 +11,7 @@ app.get('/', function(req, res) {
 });
 app.use('/Client', express.static(__dirname + '/Client'));
 
-server.listen(2000);
+server.listen(process.env.PORT || 2000);
 
 var SOCKET_LIST = {};
 //var PLAYER_LIST = {};
