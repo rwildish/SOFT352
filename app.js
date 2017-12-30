@@ -16,13 +16,24 @@ server.listen(process.env.PORT || 2000);
 var SOCKET_LIST = {};
 //var PLAYER_LIST = {};
 
-var Entity = function(){
+var Entity = function(parameters){
   var self = {
     x:250,
     y:250,
     speedX:0,
     speedY:0,
     id:"",
+    map:'map',
+  }
+  if(parameters){
+    if(parameters.x)
+      self.x = parameters.x;
+    if(parameters.y)
+      self.y = parameters.y;
+    if(parameters.map)
+      self.map = parameters.map;
+    if(parameters.id)
+      self.id = parameters.id;
   }
   self.update = function(){
     self.updatePosition();
@@ -37,9 +48,9 @@ var Entity = function(){
   return self;
 }
 
-var Player = function(id){
-  var self = Entity();
-  self.id = id;
+var Player = function(parameters){
+  var self = Entity(parameters);
+  //self.id = id;
   self.number = "" + Math.floor(10 * Math.random());
   self.pressingRight = false;
   self.pressingLeft = false;
@@ -63,9 +74,13 @@ var Player = function(id){
     }
   }
 self.shootBullet = function(angle){
-  var b = Bullet(self.id,angle);
-  b.x = self.x;
-  b.y = self.y;
+  var b = Bullet({
+    parent:self.id,
+    angle:angle,
+    x:self.x,
+    y:self.y,
+    map:self.map,
+  });
 }
 
 
@@ -95,6 +110,7 @@ self.shootBullet = function(angle){
       hp:self.hp,
       maxHp:self.maxHp,
       score:self.score,
+      map:self.map,
     };
   }
 
@@ -108,14 +124,20 @@ self.shootBullet = function(angle){
       //number:self.number,
     };
   }
-  Player.list[id] = self;
+  Player.list[self.id] = self;
 
   initPackage.player.push(self.getInitPackage());
   return self;
 }
 Player.list = {};
 Player.onConnect = function(socket){
-  var player = Player(socket.id);
+  var map = 'map';
+  if(Math.random() < 0.5)
+    map = 'map2';
+  var player = Player({
+    id:socket.id,
+    map:map,
+  });
   //PLAYER_LIST[socket.id] = player;
 
   socket.on('keyPress',function(data){
@@ -159,12 +181,13 @@ Player.update = function(){
   return pack;
 }
 
-var Bullet = function(parent,angle){
-  var self = Entity();
+var Bullet = function(parameters){
+  var self = Entity(parameters);
   self.id = Math.random();
-  self.speedX = Math.cos(angle/180*Math.PI) * 10;
-  self.speedY = Math.sin(angle/180*Math.PI) * 10;
-  self.parent = parent;
+  self.angle = parameters.angle;
+  self.speedX = Math.cos(parameters.angle/180*Math.PI) * 10;
+  self.speedY = Math.sin(parameters.angle/180*Math.PI) * 10;
+  self.parent = parameters.parent;
   self.timer = 0;
   self.toRemove = false;
 
@@ -176,7 +199,7 @@ var Bullet = function(parent,angle){
 
       for(var i in Player.list){
         var p = Player.list[i];
-        if(self.getDistance(p) < 32 && self.parent !== p.id)
+        if(self.map === p.map && self.getDistance(p) < 32 && self.parent !== p.id)
         {
           p.hp -= 1;
           var shooter = Player.list[self.parent];
@@ -187,7 +210,6 @@ var Bullet = function(parent,angle){
             p.x = Math.random() * 500;
             p.y = Math.random() * 500;
           }
-
           self.toRemove = true;
         }
       }
@@ -197,6 +219,7 @@ var Bullet = function(parent,angle){
       id:self.id,
       x:self.x,
       y:self.y,
+      map:self.map,
     };
   }
   self.getUpdatePackage = function(){

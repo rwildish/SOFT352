@@ -79,8 +79,11 @@
         images.enemy.src = '/Client/Image/enemy.png';
         images.bullet = new Image();
         images.bullet.src = '/Client/Image/bullet.png';
-        images.map = new Image();
-        images.map.src = '/Client/Image/map.png';
+        images.map = {};
+        images.map['map'] = new Image();
+        images.map['map'].src = '/Client/Image/map.png';
+        images.map['map2'] = new Image();
+        images.map['map2'].src = '/Client/Image/map2.png';
 
         var Player = function(initPackage){
           var self = {};
@@ -91,8 +94,12 @@
           self.hp = initPackage.hp;
           self.maxHp = initPackage.maxHp;
           self.score = initPackage.score;
+          self.map = initPackage.map;
 
           self.draw = function(){
+            if(Player.list[identity].map !== self.map)
+              return;
+
             var playerInitX = self.x - Player.list[identity].x + WIDTH/2;
             var playerInitY = self.y - Player.list[identity].y + HEIGHT/2;
 
@@ -118,9 +125,13 @@
           self.id = initPackage.id;
           self.x = initPackage.x;
           self.y = initPackage.y;
+          self.map = initPackage.map;
 
           self.draw = function(){
             //ctx.fillRect(self.x-5, self.y-5, 10, 10);
+            if(Player.list[identity].map !== self.map)
+              return;
+
             var width = images.bullet.width/10;
             var height = images.bullet.height/10;
             var bulletInitX = self.x - Player.list[identity].x + WIDTH/2;
@@ -195,9 +206,10 @@
         },40);
 
         function drawMap(){
-          var mapX = WIDTH/2 - Player.list[identity].x;
-          var mapY = HEIGHT/2 - Player.list[identity].y;
-          ctx.drawImage(images.map,mapX,mapY);
+          var player = Player.list[identity];
+          var mapX = WIDTH/2 - player.x;
+          var mapY = HEIGHT/2 - player.y;
+          ctx.drawImage(images.map[player.map],mapX,mapY);
         }
 
         function drawScore(){
