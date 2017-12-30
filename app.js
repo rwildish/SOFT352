@@ -5,6 +5,8 @@ var db = mongojs('mongodb://ryanWildish:Spartan9227.@ds129706.mlab.com:29706/myg
 var express = require('express');
 var app = express();
 var server = require('http').Server(app);
+//var profiler = require('v8-profiler');
+//var fs = require('fs');
 
 app.get('/', function(req, res) {
     res.sendFile(__dirname + '/Client/index.html');
@@ -70,6 +72,7 @@ var Player = function(parameters){
 
     if(self.pressingMouse1){
       self.shootBullet(self.mouseAngle);
+      self.pressingMouse1 = false;
 
     }
   }
@@ -121,6 +124,7 @@ self.shootBullet = function(angle){
       y:self.y,
       hp:self.hp,
       score:self.score,
+      map:self.map,
       //number:self.number,
     };
   }
@@ -153,6 +157,13 @@ Player.onConnect = function(socket){
       player.pressingMouse1 = data.state;
       else if(data.inputId === 'mouseAngle')
         player.mouseAngle = data.state;
+      });
+
+      socket.on('changeMap', function(data){
+        if(player.map === 'map')
+          player.map = 'map2';
+        else
+          player.map = 'map';
       });
 
       socket.emit('init',{
@@ -254,11 +265,6 @@ Bullet.getInitialPackage = function(){
     bullets.push(Bullet.list[i].getInitPackage());
   return bullets;
 }
-/*var USERS = {
-  //username:Password
-  "bob":"pass",
-}*/
-
 function isValidPassword(data, cb){
   db.users.find({username:data.username,password:data.password},function(err,res){
     if(res.length > 0)
@@ -352,3 +358,21 @@ setInterval(function() {
   removePackage.player = [];
   removePackage.bullet = [];
 } ,1000/25);
+
+/* v8-profiler fails to install, likely incompatible with node.js v8.9.1 @ 30/12/2017- find alternative server profiler
+setInterval(function(){
+  var startProfiling = function(duration){
+    profiler.startProfiling('1', true);
+    SetTimeout(function(){
+      var profile1 = profiler.stopProfiling('1');
+
+      profile1.export(function(error, result){
+        fs.writeFile('./profile.cpuprofile', result);
+        profile1.delete();
+        console.log("Profile saved.");
+      });
+    });
+  }
+},duration);
+startProfiling(10000);
+*/
