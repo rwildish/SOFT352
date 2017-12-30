@@ -54,6 +54,7 @@ var Player = function(parameters){
   var self = Entity(parameters);
   //self.id = id;
   self.number = "" + Math.floor(10 * Math.random());
+  self.username = parameters.username;
   self.pressingRight = false;
   self.pressingLeft = false;
   self.pressingUp = false;
@@ -134,11 +135,12 @@ self.shootBullet = function(angle){
   return self;
 }
 Player.list = {};
-Player.onConnect = function(socket){
+Player.onConnect = function(socket,username){
   var map = 'map';
   if(Math.random() < 0.5)
     map = 'map2';
   var player = Player({
+    username:username,
     id:socket.id,
     map:map,
   });
@@ -164,6 +166,25 @@ Player.onConnect = function(socket){
           player.map = 'map2';
         else
           player.map = 'map';
+      });
+
+      socket.on('sendMsgToServer',function(data){
+        for(var i in SOCKET_LIST){
+          SOCKET_LIST[i].emit('addToChat',player.username + ': ' + data);
+        }
+      });
+
+      socket.on('sendPmToServer',function(data){
+        var pmReceiver = null;
+        for(var i in Player.list)
+          if(Player.list[i].username === data.username)
+            pmReceiver = SOCKET_LIST[i];
+        if(pmReceiver === null){
+          socket.emit('addToChat','The player ' + data.username + ' is not online');
+        } else{
+          pmReceiver.emit('addToChat','From ' + player.username + ': ' + data.message);
+          socket.emit('addToChat','To ' + data.username + ': ' + data.message);
+        }
       });
 
       socket.emit('init',{
@@ -297,7 +318,7 @@ io.sockets.on('connection', function(socket){
     socket.on('signIn',function(data){
       isValidPassword(data,function(res){
         if(res){
-          Player.onConnect(socket);
+          Player.onConnect(socket,data.username);
           socket.emit('signInResponse',{success:true});
         } else{
           socket.emit('signInResponse',{success:false});
@@ -323,12 +344,7 @@ io.sockets.on('connection', function(socket){
       //delete Player.list[socket.id];
     });
 
-    socket.on('sendMsgToServer',function(data){
-      var playerName = ("" + socket.id).slice(2,7);
-      for(var i in SOCKET_LIST){
-        SOCKET_LIST[i].emit('addToChat',playerName + ': ' + data);
-      }
-    });
+
 
     socket.on('evalServer',function(data){
       var res = eval(data);
