@@ -66,10 +66,11 @@ Player = function(parameters){
   self.pressingDown = false;
   self.pressingMouse1 = false;
   self.mouseAngle = 0;
-  self.maxSpeed = 10;
+  self.maxSpeed = 5;
   self.hp = 5;
   self.maxHp = 5;
   self.score = 0;
+  self.startTime = Date.now();
 
   var super_update = self.update;
   self.update = function(){
@@ -222,8 +223,8 @@ Bullet = function(parameters){
   var self = Entity(parameters);
   self.id = Math.random();
   self.angle = parameters.angle;
-  self.speedX = Math.cos(parameters.angle/180*Math.PI) * 10;
-  self.speedY = Math.sin(parameters.angle/180*Math.PI) * 10;
+  self.speedX = Math.cos(parameters.angle/180*Math.PI) * 5;
+  self.speedY = Math.sin(parameters.angle/180*Math.PI) * 5;
   self.parent = parameters.parent;
   self.timer = 0;
   self.toRemove = false;
@@ -244,6 +245,14 @@ Bullet = function(parameters){
             if(shooter)
               shooter.score += 10;
             p.hp = p.maxHp;
+            var survivalTime = (Date.now() - p.startTime)/1000;
+            console.log("You survived for " + survivalTime + " seconds");
+            p.startTime = Date.now();
+            //send private message to player with survival time
+            //socket.emit('emitScore',{username:p.username,score:p.score});
+            var playerData = {username:p.username,score:p.score};
+            globalSocketCall.emitScoreCall(p.username,p.score);
+            p.score = 0;
             p.x = Math.random() * 500;
             p.y = Math.random() * 500;
           }

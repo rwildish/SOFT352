@@ -12,6 +12,7 @@ var server = require('http').Server(app);
 
 SOCKET_LIST = {};
 //var PLAYER_LIST = {};
+globalSocketCall = function(user,pScore){};
 
 app.get('/', function(req, res) {
     res.sendFile(__dirname + '/Client/index.html');
@@ -39,6 +40,66 @@ function isUsernameTaken(data, cb){
 }
 function addUser(data, cb){
   db.users.insert({username:data.username,password:data.password},function(err){
+    db.leaderboard.insert({username:data.username,score:0});
+    cb();
+  });
+}
+const isScoreHigher = function(data, cb){
+  //var leaderboardPlacement = 0;
+  console.log('isScoreHigher');
+  //var user = db.collection('leaderboard');
+
+  const leaderboard = db.collection('leaderboard');
+  leaderboard.find({username:data.user}).toArray(function(err,leaders){
+    //assert.equal(err,null);
+    console.log('found user');
+    cb(leaders);
+  });
+    //if(leaders === null)
+      //cb(false);
+    };
+  /*if(path[0].username === data.user})
+  {
+    console.log('if');
+    //var user = db.leaderboard.getIndexes({username:data.user});
+    console.log(path[0]);
+    console.log(path[0].score);
+    if(data.pScore > path[0].score)
+    {
+      db.leaderboard.update({username:data.user},{score:data.pScore});
+    }
+    //cb();
+  }
+  else{
+    console.log('else');
+    db.leaderboard.insert({username:data.user,score:data.pScore});
+
+  }*/
+  /*for(var i in db.leaderboard)
+  {
+    if(data.score > db.leaderboard[i].score.value)
+    {
+      break;
+    }
+    else if(data.score === db.leaderboard[i].score.value)
+    {
+      leaderboardPlacement++;
+      break;
+    }
+    else{
+      leaderboardPlacement++;
+    }
+  }
+
+  db.leaderboard.find({username:data.username},function(err,res){
+    if(res.length > 0)
+      cb(true);
+    else
+        cb(false);
+  });*/
+//}
+function addScoreToLeaderboard(data, cb){
+  db.leaderboard.insert({username:data.username,score:data.score},function(err){
     cb();
   });
 }
@@ -49,6 +110,9 @@ io.sockets.on('connection', function(socket){
     socket.id = Math.random();
     SOCKET_LIST[socket.id] = socket;
 
+    socket.on('emitScore',function(data){
+      isScoreHigher(data);
+    });
 
     socket.on('signIn',function(data){
       isValidPassword(data,function(res){
@@ -86,8 +150,28 @@ io.sockets.on('connection', function(socket){
       socket.emit('evalAnswer',res);
     })
 
+    globalSocketCall.emitScoreCall = function(user,pScore){
+      //socket.emit('emitScore',{username:user,score:pScore});
+      var data = {user,pScore}
+      isScoreHigher(data,function(res){
+        if(res){
+          console.log('inside res');
+          if(data.pScore > res[0].score)
+          {
+            console.log('inside if');
+            db.leaderboard.update({username:data.user},{username:data.user,score:data.pScore});
+          }
+        } /*else{
+          console.log('inside else');
+          db.leaderboard.insert({username:data.user,score:data.pScore});
+        }*/
+        console.log('exiting loop');
+      });
 
+    }
 });
+
+
 
 setInterval(function() {
   var packs = Entity.getFrameUpdateData();
@@ -97,7 +181,7 @@ setInterval(function() {
     socket.emit('update', packs.updatePackage);
     socket.emit('remove', packs.removePackage);
   }
-} ,1000/25);
+} ,1000/60);
 
 /* v8-profiler fails to install, likely incompatible with node.js v8.9.1 @ 30/12/2017- find alternative server profiler
 setInterval(function(){
