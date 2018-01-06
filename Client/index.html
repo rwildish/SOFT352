@@ -62,7 +62,7 @@
 
       var ctx = document.getElementById("ctx").getContext("2d");
       var ctxUI = document.getElementById("ctx-ui").getContext("2d");
-      ctx.font = '30px Arial';
+      ctxUI.font = '30px Arial';
 
         socket.on('addToChat',function(data){
           chatText.innerHTML += '<div>' + data + '</div>';
@@ -93,7 +93,7 @@
 
         var images = {};
         images.player = new Image();
-        images.player.src = '/Client/Image/friendly.png';
+        images.player.src = '/Client/Image/friendly2.png';
         images.enemy = new Image();
         images.enemy.src = '/Client/Image/enemy.png';
         images.bullet = new Image();
@@ -281,7 +281,6 @@ var myTimer = setInterval(changeCanFire, 1);
             socket.emit('keyPress',{inputId:'shoot',state:true});
             canFire = false;
             myTimer = setInterval(changeCanFire, 500);
-            //socket.emit('keyPress',{inputId:'shoot',state:false});
             return;
           }
         }

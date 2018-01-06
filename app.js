@@ -11,7 +11,6 @@ var server = require('http').Server(app);
 //var fs = require('fs');
 
 SOCKET_LIST = {};
-//var PLAYER_LIST = {};
 globalSocketCall = function(user,pScore){};
 
 app.get('/', function(req, res) {
@@ -44,75 +43,20 @@ function addUser(data, cb){
     cb();
   });
 }
-const isScoreHigher = function(data, cb){
-  //var leaderboardPlacement = 0;
+isScoreHigher = function(data, cb){
   console.log('isScoreHigher');
-  //var user = db.collection('leaderboard');
-
-  const leaderboard = db.collection('leaderboard');
+  var leaderboard = db.collection('leaderboard');
   leaderboard.find({username:data.user}).toArray(function(err,leaders){
-    //assert.equal(err,null);
     console.log('found user');
     cb(leaders);
   });
-    //if(leaders === null)
-      //cb(false);
-    };
-  /*if(path[0].username === data.user})
-  {
-    console.log('if');
-    //var user = db.leaderboard.getIndexes({username:data.user});
-    console.log(path[0]);
-    console.log(path[0].score);
-    if(data.pScore > path[0].score)
-    {
-      db.leaderboard.update({username:data.user},{score:data.pScore});
-    }
-    //cb();
-  }
-  else{
-    console.log('else');
-    db.leaderboard.insert({username:data.user,score:data.pScore});
-
-  }*/
-  /*for(var i in db.leaderboard)
-  {
-    if(data.score > db.leaderboard[i].score.value)
-    {
-      break;
-    }
-    else if(data.score === db.leaderboard[i].score.value)
-    {
-      leaderboardPlacement++;
-      break;
-    }
-    else{
-      leaderboardPlacement++;
-    }
-  }
-
-  db.leaderboard.find({username:data.username},function(err,res){
-    if(res.length > 0)
-      cb(true);
-    else
-        cb(false);
-  });*/
-//}
-function addScoreToLeaderboard(data, cb){
-  db.leaderboard.insert({username:data.username,score:data.score},function(err){
-    cb();
-  });
-}
+};
 
 var io = require('socket.io')(server, {});
 io.sockets.on('connection', function(socket){
     console.log('socket connection');
     socket.id = Math.random();
     SOCKET_LIST[socket.id] = socket;
-
-    socket.on('emitScore',function(data){
-      isScoreHigher(data);
-    });
 
     socket.on('signIn',function(data){
       isValidPassword(data,function(res){
@@ -143,15 +87,12 @@ io.sockets.on('connection', function(socket){
       //delete Player.list[socket.id];
     });
 
-
-
     socket.on('evalServer',function(data){
       var res = eval(data);
       socket.emit('evalAnswer',res);
     })
 
     globalSocketCall.emitScoreCall = function(user,pScore){
-      //socket.emit('emitScore',{username:user,score:pScore});
       var data = {user,pScore}
       isScoreHigher(data,function(res){
         if(res){
@@ -161,10 +102,7 @@ io.sockets.on('connection', function(socket){
             console.log('inside if');
             db.leaderboard.update({username:data.user},{username:data.user,score:data.pScore});
           }
-        } /*else{
-          console.log('inside else');
-          db.leaderboard.insert({username:data.user,score:data.pScore});
-        }*/
+        }
         console.log('exiting loop');
       });
 

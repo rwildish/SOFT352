@@ -71,6 +71,9 @@ Player = function(parameters){
   self.maxHp = 5;
   self.score = 0;
   self.startTime = Date.now();
+  self.lastSurvivalTime = 0;
+  self.width = 1000/30;
+  self.height = 1000/30;
 
   var super_update = self.update;
   self.update = function(){
@@ -108,6 +111,18 @@ self.shootBullet = function(angle){
       self.speedY = self.maxSpeed;
     else
       self.speedY = 0;
+
+    var mapWidth = 2560;
+    var mapHeight = 1440;
+
+    if(self.x < self.width/2)
+      self.x = self.width/2;
+    if(self.x > mapWidth - self.width/2)
+      self.x = mapWidth - self.width/2;
+    if(self.y < self.height/2)
+      self.y = self.height/2;
+    if(self.y > mapHeight - self.height/2)
+      self.y = mapHeight - self.height/2;
   }
 
 
@@ -150,7 +165,6 @@ Player.onConnect = function(socket,username){
     id:socket.id,
     map:map,
   });
-  //PLAYER_LIST[socket.id] = player;
 
   socket.on('keyPress',function(data){
     if(data.inputId === 'left')
@@ -192,6 +206,18 @@ Player.onConnect = function(socket,username){
           socket.emit('addToChat','To ' + data.username + ': ' + data.message);
         }
       });
+      EmitSurvivalTime = function(data){
+        var pmReceiver = SOCKET_LIST[data]
+        pmReceiver.emit('addToChat','You survived for ' + Player.list[data].lastSurvivalTime + ' seconds');
+        for(var i in SOCKET_LIST)
+        {
+          if(SOCKET_LIST[i] !== SOCKET_LIST[data])
+          {
+            //potential to check for players only on the same map
+            SOCKET_LIST[i].emit('addToChat', Player.list[data].username + ' has died. They survived for ' + Player.list[data].lastSurvivalTime + ' seconds');
+          }
+        }
+    }
 
       socket.emit('init',{
         identity:socket.id,
@@ -237,7 +263,7 @@ Bullet = function(parameters){
 
       for(var i in Player.list){
         var p = Player.list[i];
-        if(self.map === p.map && self.getDistance(p) < 32 && self.parent !== p.id)
+        if(self.map === p.map && self.getDistance(p) < 18 && self.parent !== p.id)
         {
           p.hp -= 1;
           var shooter = Player.list[self.parent];
@@ -245,11 +271,10 @@ Bullet = function(parameters){
             if(shooter)
               shooter.score += 10;
             p.hp = p.maxHp;
-            var survivalTime = (Date.now() - p.startTime)/1000;
-            console.log("You survived for " + survivalTime + " seconds");
+            p.lastSurvivalTime = (Date.now() - p.startTime)/1000;
+            console.log("You survived for " + self.lastSurvivalTime + " seconds");
             p.startTime = Date.now();
-            //send private message to player with survival time
-            //socket.emit('emitScore',{username:p.username,score:p.score});
+            EmitSurvivalTime(p.id);
             var playerData = {username:p.username,score:p.score};
             globalSocketCall.emitScoreCall(p.username,p.score);
             p.score = 0;
