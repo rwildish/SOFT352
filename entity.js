@@ -219,6 +219,23 @@ Player.onConnect = function(socket,username){
         }
     }
 
+    emitScoreCall = function(user,score){
+      var data = {user,score}
+      isScoreHigher(data,function(res){
+        if(res){
+          console.log('inside res');
+          if(data.score > res[0].score)
+          {
+            console.log('inside if');
+            db.leaderboard.update({username:data.user},{username:data.user,score:data.score});
+          }
+        }
+        console.log('exiting loop');
+      });
+
+
+};
+
       socket.emit('init',{
         identity:socket.id,
         player:Player.getInitialPackage(),
@@ -232,6 +249,15 @@ Player.getInitialPackage = function(){
   return players;
 }
 Player.onDisconnect = function(socket){
+  var p = Player.list[socket.id];
+  if (p === undefined)
+  {
+    p = {
+    username:"guest",
+    score:0
+    }
+  }
+  emitScoreCall(p.username,p.score);
   delete Player.list[socket.id];
   removePackage.player.push(socket.id);
 }
@@ -257,7 +283,7 @@ Bullet = function(parameters){
 
   var super_update = self.update;
   self.update = function(){
-      if(self.timer++  > 100)
+      if(self.timer++  > 250)
         self.toRemove = true;
       super_update();
 
@@ -272,11 +298,11 @@ Bullet = function(parameters){
               shooter.score += 10;
             p.hp = p.maxHp;
             p.lastSurvivalTime = (Date.now() - p.startTime)/1000;
-            console.log("You survived for " + self.lastSurvivalTime + " seconds");
+            console.log(p.username + " survived for " + p.lastSurvivalTime + " seconds");
             p.startTime = Date.now();
             EmitSurvivalTime(p.id);
             var playerData = {username:p.username,score:p.score};
-            globalSocketCall.emitScoreCall(p.username,p.score);
+            emitScoreCall(p.username,p.score);
             p.score = 0;
             p.x = Math.random() * 500;
             p.y = Math.random() * 500;
@@ -325,3 +351,12 @@ Bullet.getInitialPackage = function(){
     bullets.push(Bullet.list[i].getInitPackage());
   return bullets;
 }
+
+isScoreHigher = function(data, cb){
+  console.log('isScoreHigher');
+  var leaderboard = db.collection('leaderboard');
+  leaderboard.find({username:data.user}).toArray(function(err,leaders){
+    console.log('found user');
+    cb(leaders);
+  });
+};

@@ -1,6 +1,6 @@
 
 var mongojs = require("mongojs");
-var db = mongojs('mongodb://ryanWildish:Spartan9227.@ds129706.mlab.com:29706/mygame', ['users']);
+db = mongojs('mongodb://ryanWildish:Spartan9227.@ds129706.mlab.com:29706/mygame', ['users']);
 
 require('./entity');
 
@@ -11,7 +11,7 @@ var server = require('http').Server(app);
 //var fs = require('fs');
 
 SOCKET_LIST = {};
-globalSocketCall = function(user,pScore){};
+//globalSocketCall = function(user,pScore){};
 
 app.get('/', function(req, res) {
     res.sendFile(__dirname + '/Client/index.html');
@@ -43,14 +43,7 @@ function addUser(data, cb){
     cb();
   });
 }
-isScoreHigher = function(data, cb){
-  console.log('isScoreHigher');
-  var leaderboard = db.collection('leaderboard');
-  leaderboard.find({username:data.user}).toArray(function(err,leaders){
-    console.log('found user');
-    cb(leaders);
-  });
-};
+
 
 var io = require('socket.io')(server, {});
 io.sockets.on('connection', function(socket){
@@ -82,9 +75,8 @@ io.sockets.on('connection', function(socket){
   });
 
     socket.on('disconnect',function(){
-      delete SOCKET_LIST[socket.id];
       Player.onDisconnect(socket);
-      //delete Player.list[socket.id];
+      delete SOCKET_LIST[socket.id];
     });
 
     socket.on('evalServer',function(data){
@@ -92,21 +84,6 @@ io.sockets.on('connection', function(socket){
       socket.emit('evalAnswer',res);
     })
 
-    globalSocketCall.emitScoreCall = function(user,pScore){
-      var data = {user,pScore}
-      isScoreHigher(data,function(res){
-        if(res){
-          console.log('inside res');
-          if(data.pScore > res[0].score)
-          {
-            console.log('inside if');
-            db.leaderboard.update({username:data.user},{username:data.user,score:data.pScore});
-          }
-        }
-        console.log('exiting loop');
-      });
-
-    }
 });
 
 
