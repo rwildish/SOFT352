@@ -64,6 +64,7 @@ Player = function(parameters){
   self.pressingLeft = false;
   self.pressingUp = false;
   self.pressingDown = false;
+  self.pressingSpace = false;
   self.pressingMouse1 = false;
   self.mouseAngle = 0;
   self.maxSpeed = 5;
@@ -80,7 +81,12 @@ Player = function(parameters){
     self.updateSpeed();
     super_update();
 
-    if(self.pressingMouse1){
+    if(self.pressingSpace){
+      self.tripleShootBullet(self.mouseAngle);
+      self.pressingSpace = false;
+      self.pressingMouse1 = false;
+    }
+    else if(self.pressingMouse1){
       self.shootBullet(self.mouseAngle);
       self.pressingMouse1 = false;
 
@@ -95,8 +101,29 @@ self.shootBullet = function(angle){
     map:self.map,
   });
 }
-
-
+self.tripleShootBullet = function(angle){
+  var b1 = Bullet({
+    parent:self.id,
+    angle:angle - 5,
+    x:self.x,
+    y:self.y,
+    map:self.map,
+  });
+  var b2 = Bullet({
+    parent:self.id,
+    angle:angle,
+    x:self.x,
+    y:self.y,
+    map:self.map,
+  });
+  var b3 = Bullet({
+    parent:self.id,
+    angle:angle + 5,
+    x:self.x,
+    y:self.y,
+    map:self.map,
+  });
+}
   self.updateSpeed = function(){
     if(self.pressingRight)
       self.speedX = self.maxSpeed;
@@ -124,8 +151,6 @@ self.shootBullet = function(angle){
     if(self.y > mapHeight - self.height/2)
       self.y = mapHeight - self.height/2;
   }
-
-
   self.getInitPackage = function(){
     return{
       id:self.id,
@@ -138,7 +163,6 @@ self.shootBullet = function(angle){
       map:self.map,
     };
   }
-
   self.getUpdatePackage = function(){
     return{
       id:self.id,
@@ -147,11 +171,9 @@ self.shootBullet = function(angle){
       hp:self.hp,
       score:self.score,
       map:self.map,
-      //number:self.number,
     };
   }
   Player.list[self.id] = self;
-
   initPackage.player.push(self.getInitPackage());
   return self;
 }
@@ -175,10 +197,12 @@ Player.onConnect = function(socket,username){
       player.pressingUp = data.state;
     else if(data.inputId === 'down')
       player.pressingDown = data.state;
+    else if(data.inputId === 'tripleShoot')
+      player.pressingSpace = data.state;
     else if(data.inputId === 'shoot')
       player.pressingMouse1 = data.state;
-      else if(data.inputId === 'mouseAngle')
-        player.mouseAngle = data.state;
+    else if(data.inputId === 'mouseAngle')
+      player.mouseAngle = data.state;
       });
 
       socket.on('changeMap', function(data){
@@ -206,6 +230,7 @@ Player.onConnect = function(socket,username){
           socket.emit('addToChat','To ' + data.username + ': ' + data.message);
         }
       });
+
       EmitSurvivalTime = function(data){
         var pmReceiver = SOCKET_LIST[data]
         pmReceiver.emit('addToChat','You survived for ' + Player.list[data].lastSurvivalTime + ' seconds');
@@ -219,22 +244,7 @@ Player.onConnect = function(socket,username){
         }
     }
 
-    emitScoreCall = function(user,score){
-      var data = {user,score}
-      isScoreHigher(data,function(res){
-        if(res){
-          console.log('inside res');
-          if(data.score > res[0].score)
-          {
-            console.log('inside if');
-            db.leaderboard.update({username:data.user},{username:data.user,score:data.score});
-          }
-        }
-        console.log('exiting loop');
-      });
 
-
-};
 
       socket.emit('init',{
         identity:socket.id,
@@ -352,6 +362,21 @@ Bullet.getInitialPackage = function(){
   return bullets;
 }
 
+emitScoreCall = function(user,score){
+  var data = {user,score}
+  isScoreHigher(data,function(res){
+    if(res){
+      console.log('inside res');
+      if(data.score > res[0].score)
+      {
+        console.log('inside if');
+        db.leaderboard.update({username:data.user},{username:data.user,score:data.score});
+      }
+    }
+    console.log('exiting loop');
+  });
+};
+
 isScoreHigher = function(data, cb){
   console.log('isScoreHigher');
   var leaderboard = db.collection('leaderboard');
@@ -359,4 +384,4 @@ isScoreHigher = function(data, cb){
     console.log('found user');
     cb(leaders);
   });
-};
+}

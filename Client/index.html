@@ -252,6 +252,14 @@
             socket.emit('keyPress',{inputId:'left', state:true});
           else if(event.keyCode === 87) //w
           socket.emit('keyPress',{inputId:'up', state:true});
+          else if(event.keyCode === 32){
+          if(canFire === true){
+            canFire = false;
+            socket.emit('keyPress',{inputId:'tripleShoot',state:true});
+
+            myTimer = setInterval(changeCanFire, 1500);
+            }
+          }
         }
 
         document.onkeyup = function(event) {
@@ -263,6 +271,8 @@
             socket.emit('keyPress',{inputId:'left', state:false});
           else if(event.keyCode === 87) //w
             socket.emit('keyPress',{inputId:'up', state:false});
+          else if(event.keyCode === 32) //w
+            socket.emit('keyPress',{inputId:'tripleShoot', state:false});
         }
 
 var canFire = true;
@@ -276,10 +286,15 @@ function changeCanFire(){
 
 var myTimer = setInterval(changeCanFire, 1);
 
+  document.oncontextmenu = function (event){
+    event.preventDefault();
+  }
+
         document.onmousedown = function(event){
           if(canFire === true){
-            socket.emit('keyPress',{inputId:'shoot',state:true});
             canFire = false;
+            socket.emit('keyPress',{inputId:'shoot',state:true});
+
             myTimer = setInterval(changeCanFire, 500);
             return;
           }
@@ -287,6 +302,7 @@ var myTimer = setInterval(changeCanFire, 1);
 
         document.onmouseup = function(event){
           socket.emit('keyPress',{inputId:'shoot',state:false});
+          socket.emit('keyPress',{inputId:'tripleShoot',state:false});
         }
 
         document.onmousemove = function(event){
@@ -296,8 +312,6 @@ var myTimer = setInterval(changeCanFire, 1);
           socket.emit('keyPress',{inputId:'mouseAngle',state:angle});
         }
 
-        document.oncontextmenu = function (event){
-          event.preventDefault();
-        }
+
 
 </script>

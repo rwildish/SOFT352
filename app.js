@@ -11,7 +11,6 @@ var server = require('http').Server(app);
 //var fs = require('fs');
 
 SOCKET_LIST = {};
-//globalSocketCall = function(user,pScore){};
 
 app.get('/', function(req, res) {
     res.sendFile(__dirname + '/Client/index.html');
@@ -19,7 +18,6 @@ app.get('/', function(req, res) {
 app.use('/Client', express.static(__dirname + '/Client'));
 
 server.listen(process.env.PORT || 2000);
-
 
 function isValidPassword(data, cb){
   db.users.find({username:data.username,password:data.password},function(err,res){
@@ -43,7 +41,6 @@ function addUser(data, cb){
     cb();
   });
 }
-
 
 var io = require('socket.io')(server, {});
 io.sockets.on('connection', function(socket){
@@ -85,8 +82,6 @@ io.sockets.on('connection', function(socket){
     })
 
 });
-
-
 
 setInterval(function() {
   var packs = Entity.getFrameUpdateData();
