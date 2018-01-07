@@ -24,6 +24,15 @@
   </div>
 </div>
 
+<div id="leaderboardScreen" style="display:none;">
+  <div id="leaderboard" style="position:absolute;width:500px;height:500px">
+    <div id="leaderboardDiv" style="width:500px;height:500px;overflow-y:scroll;border:1px solid #000000;-webkit-user-select:none;">
+      <div>This is the leaderboard</div>
+    </div>
+    <button onclick="respawn()" style="position:absolute;bottom:0px;left:0px;-webkit-user-select:none;">Try Again</button>
+  </div>
+</div>
+
 <script src="/socket.io/socket.io.js"></script>
 <script>
   var WIDTH = 500;
@@ -42,6 +51,7 @@
   signDivSignUp.onclick = function(){
     socket.emit('signUp',{username:signDivUsername.value,password:signDivPassword.value});
   }
+
   socket.on('signUpResponse',function(data){
     if(data.success){
       alert("Sign up successful!");
@@ -62,7 +72,10 @@
 
       var ctx = document.getElementById("ctx").getContext("2d");
       var ctxUI = document.getElementById("ctx-ui").getContext("2d");
+      var leaderboardScreen = document.getElementById("leaderboardScreen");
+      var leaderboardDiv = document.getElementById("leaderboardDiv");
       ctxUI.font = '30px Arial';
+      leaderboardScreen.font = '30px Arial';
 
         socket.on('addToChat',function(data){
           chatText.innerHTML += '<div>' + data + '</div>';
@@ -91,6 +104,15 @@
           socket.emit('changeMap');
         }
 
+        function respawn(){
+          console.log('respawn');
+          isPlayerDead = false;
+          leaderboardScreen.style.display = 'none';
+          gameDiv.style.display = 'inline-block';
+          socket.emit('respawnPlayer');
+          console.log('emitted');
+        }
+
         var images = {};
         images.player = new Image();
         images.player.src = '/Client/Image/friendly2.png';
@@ -103,6 +125,8 @@
         images.map['map'].src = '/Client/Image/map.png';
         images.map['map2'] = new Image();
         images.map['map2'].src = '/Client/Image/map2.png';
+
+        var isPlayerDead = false;
 
         var Player = function(initPackage){
           var self = {};
@@ -213,6 +237,28 @@
             delete Bullet.list[data.bullet[i]];
         });
 
+        socket.on('showLeaderboard', function(score){
+          gameDiv.style.display = 'none';
+          leaderboardScreen.style.display = 'inline-block';
+          socket.emit('getLeaderboard');
+
+        });
+
+        socket.on('noLeaderboard',function(){
+          leaderboardDiv.innerHTML += '<div>' + "The leaderboard is not available at this time" + '</div>';
+        });
+
+        socket.on('leaderboardListFound',function(list){
+          for(var i in list)
+          {
+            leaderboardDiv.innerHTML += '<div>' + list[i].username + ":   " + list[i].score + '</div>';
+          }
+        });
+
+        socket.on('updatePlayerDead', function(){
+          isPlayerDead = true;
+        });
+
 
         setInterval(function(){
           if(!identity)
@@ -244,20 +290,22 @@
         var lastScore = null;
 
         document.onkeydown = function(event) {
-          if(event.keyCode === 68) //d
-            socket.emit('keyPress',{inputId:'right', state:true});
-          else if(event.keyCode === 83) //s
-            socket.emit('keyPress',{inputId:'down', state:true});
-          else if(event.keyCode === 65) //a
-            socket.emit('keyPress',{inputId:'left', state:true});
-          else if(event.keyCode === 87) //w
-          socket.emit('keyPress',{inputId:'up', state:true});
-          else if(event.keyCode === 32){
-          if(canFire === true){
-            canFire = false;
-            socket.emit('keyPress',{inputId:'tripleShoot',state:true});
+          if(isPlayerDead === false){
+            if(event.keyCode === 68) //d
+              socket.emit('keyPress',{inputId:'right', state:true});
+            else if(event.keyCode === 83) //s
+              socket.emit('keyPress',{inputId:'down', state:true});
+            else if(event.keyCode === 65) //a
+              socket.emit('keyPress',{inputId:'left', state:true});
+            else if(event.keyCode === 87) //w
+            socket.emit('keyPress',{inputId:'up', state:true});
+            else if(event.keyCode === 32){
+            if(canFire === true){
+              canFire = false;
+              socket.emit('keyPress',{inputId:'tripleShoot',state:true});
 
-            myTimer = setInterval(changeCanFire, 1500);
+              myTimer = setInterval(changeCanFire, 1500);
+              }
             }
           }
         }
@@ -278,10 +326,8 @@
 var canFire = true;
 
 function changeCanFire(){
-
  canFire = true;
  clearInterval(myTimer);
-
 }
 
 var myTimer = setInterval(changeCanFire, 1);
@@ -311,7 +357,5 @@ var myTimer = setInterval(changeCanFire, 1);
           var angle = Math.atan2(y,x) / Math.PI * 180;
           socket.emit('keyPress',{inputId:'mouseAngle',state:angle});
         }
-
-
 
 </script>

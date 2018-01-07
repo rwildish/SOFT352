@@ -75,6 +75,7 @@ Player = function(parameters){
   self.lastSurvivalTime = 0;
   self.width = 1000/30;
   self.height = 1000/30;
+  self.isDead = false;
 
   var super_update = self.update;
   self.update = function(){
@@ -142,6 +143,7 @@ self.tripleShootBullet = function(angle){
     var mapWidth = 2560;
     var mapHeight = 1440;
 
+    if(self.isDead === false){
     if(self.x < self.width/2)
       self.x = self.width/2;
     if(self.x > mapWidth - self.width/2)
@@ -151,6 +153,7 @@ self.tripleShootBullet = function(angle){
     if(self.y > mapHeight - self.height/2)
       self.y = mapHeight - self.height/2;
   }
+}
   self.getInitPackage = function(){
     return{
       id:self.id,
@@ -238,13 +241,18 @@ Player.onConnect = function(socket,username){
         {
           if(SOCKET_LIST[i] !== SOCKET_LIST[data])
           {
+            //potential to add to chat the players current high score or if they get a new high score
             //potential to check for players only on the same map
             SOCKET_LIST[i].emit('addToChat', Player.list[data].username + ' has died. They survived for ' + Player.list[data].lastSurvivalTime + ' seconds');
           }
         }
     }
 
-
+socket.on('respawnPlayer', function(){
+  Player.list[socket.id].isDead = false;
+  socket.x = Math.floor(Math.random() * 2560);
+  socket.y = Math.floor(Math.random() * 1440);
+});
 
       socket.emit('init',{
         identity:socket.id,
@@ -313,9 +321,13 @@ Bullet = function(parameters){
             EmitSurvivalTime(p.id);
             var playerData = {username:p.username,score:p.score};
             emitScoreCall(p.username,p.score);
+            p.isDead = true;
+            p.x = 10000;
+            p.y = 10000;
+            var socket = SOCKET_LIST[p.id];
+            socket.emit('updatePlayerDead');
+            socket.emit('showLeaderboard', p.score);
             p.score = 0;
-            p.x = Math.random() * 500;
-            p.y = Math.random() * 500;
           }
           self.toRemove = true;
         }

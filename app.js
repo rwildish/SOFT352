@@ -81,6 +81,49 @@ io.sockets.on('connection', function(socket){
       socket.emit('evalAnswer',res);
     })
 
+    socket.on('getLeaderboard',function(){
+      getLeaderboard(function(res){
+        if(res)
+        {
+          var list = [];
+          var sortedList = [];
+          var highest = -1;
+          var highestName = "No scores found";
+          var highestj = -1;
+
+          for(var i in res)
+          {
+            highestName = res[i].username;
+            highest = res[i].score;
+            list.push({username:highestName,score:highest});
+          }
+
+          highest = -1;
+          highestName = "No scores found";
+
+          for(var i in list)
+          {
+            for(var j in list)
+            {
+              if(list[j].score > highest){
+                highest = list[j].score;
+                console.log(j);
+                highestName = list[j].username;
+                highestj = j;
+              }
+            }
+            sortedList.push({username:highestName,score:highest});
+            list[highestj].score = -2;
+            highest = -1;
+            highestName = "No scores found";
+          }
+          socket.emit('leaderboardListFound', sortedList);
+        }
+        else{
+          socket.emit('noLeaderboard');
+        }
+      });
+    })
 });
 
 setInterval(function() {
@@ -92,6 +135,14 @@ setInterval(function() {
     socket.emit('remove', packs.removePackage);
   }
 } ,1000/60);
+
+function getLeaderboard(cb){
+  console.log('getLeaderboard');
+  var leaderboard = db.collection('leaderboard');
+  leaderboard.find({}).toArray(function(err,leaders){
+  cb(leaders);
+  });
+}
 
 /* v8-profiler fails to install, likely incompatible with node.js v8.9.1 @ 30/12/2017- find alternative server profiler
 setInterval(function(){
