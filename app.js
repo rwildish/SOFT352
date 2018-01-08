@@ -136,6 +136,32 @@ setInterval(function() {
   }
 } ,1000/60);
 
+setInterval(function() {
+    console.log('spawning score pickup');
+    var map = 'map';
+    if(Math.random() < 0.5)
+      map = 'map2';
+    var s = ScorePickUp({
+      x:(2560 * Math.random()),
+      y:(1440 * Math.random()),
+      map:map,
+    });
+    //console.log('try to spawn score pickup');
+} ,10000);
+
+setInterval(function() {
+    console.log('spawning health pickup');
+    var map = 'map';
+    if(Math.random() < 0.5)
+      map = 'map2';
+    var h = HealthPickUp({
+      x:(2560 * Math.random()),
+      y:(1440 * Math.random()),
+      map:map,
+    });
+    //console.log('try to spawn health pickup');
+} ,15000);
+
 function getLeaderboard(cb){
   console.log('getLeaderboard');
   var leaderboard = db.collection('leaderboard');

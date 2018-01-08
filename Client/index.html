@@ -11,7 +11,8 @@
     <canvas id="ctx-ui" width="500" height="500" style="position:absolute;border:1px solid #000000;"></canvas>
 
     <div id="ui" style="position:absolute;width:500px;height:500px;">
-      <button onclick="changeMap()" style="position:absolute;bottom:0px;left:0px;-webkit-user-select:none;">Change Map</button>
+      <!--Change onclick here on game release so that it has some sort of timer or is removed from the game whilst player is alive-->
+      <button onclick="changeMap()" style="position:absolute;bottom:0px;left:2px;-webkit-user-select:none;">Change Map</button>
     </div>
   </div>
   <div id="belowGameWindow" style="margin-top:510px">
@@ -29,7 +30,8 @@
     <div id="leaderboardDiv" style="width:500px;height:500px;overflow-y:scroll;border:1px solid #000000;-webkit-user-select:none;">
       <div>This is the leaderboard</div>
     </div>
-    <button onclick="respawn()" style="position:absolute;bottom:0px;left:0px;-webkit-user-select:none;">Try Again</button>
+    <button onclick="respawn()" style="position:absolute;bottom:0px;left:94px;-webkit-user-select:none;">Try Again</button>
+    <button onclick="changeMap()" style="position:absolute;bottom:0px;left:2px;-webkit-user-select:none;">Change Map</button>
   </div>
 </div>
 
@@ -83,6 +85,7 @@
 
         socket.on('evalAnswer',function(data){
           console.log(data);
+          chatText.innerHTML += '<div>' + data + '</div>';
         })
 
         chatForm.onsubmit = function(e){
@@ -125,6 +128,10 @@
         images.map['map'].src = '/Client/Image/map.png';
         images.map['map2'] = new Image();
         images.map['map2'].src = '/Client/Image/map2.png';
+        images.health = new Image();
+        images.health.src = '/Client/Image/health.png';
+        images.score = new Image();
+        images.score.src = '/Client/Image/score.png';
 
         var isPlayerDead = false;
 
@@ -188,6 +195,62 @@
         }
         Bullet.list = {};
 
+        var HealthPickUp = function(initPackage){
+          var self = {};
+          self.id = initPackage.id;
+          self.x = initPackage.x;
+          self.y = initPackage.y;
+          self.map = initPackage.map;
+
+          self.draw = function(){
+            //ctx.fillRect(self.x-5, self.y-5, 10, 10);
+            if(Player.list[identity].map !== self.map)
+              return;
+
+            var width = images.health.width/10;
+            var height = images.health.height/10;
+            var healthInitX = self.x - Player.list[identity].x + WIDTH/2;
+            var healthInitY = self.y - Player.list[identity].y + HEIGHT/2;
+            ctx.drawImage(images.health,0,0,images.health.width,images.health.height,
+            healthInitX-width/2,healthInitY-height/2,width,height);
+            //console.log('draw health pickup');
+          }
+
+          HealthPickUp.list[self.id] = self;
+          //console.log('added pickup to health list');
+          return self;
+        }
+        HealthPickUp.list = {};
+
+        var ScorePickUp = function(initPackage){
+          var self = {};
+          self.id = initPackage.id;
+          self.x = initPackage.x;
+          self.y = initPackage.y;
+          self.map = initPackage.map;
+
+          self.draw = function(){
+            //ctx.fillRect(self.x-5, self.y-5, 10, 10);
+            if(Player.list[identity].map !== self.map)
+              return;
+
+            var width = images.score.width/5;
+            var height = images.score.height/5;
+            var scoreInitX = self.x - Player.list[identity].x + WIDTH/2;
+            var scoreInitY = self.y - Player.list[identity].y + HEIGHT/2;
+            ctx.drawImage(images.score,0,0,images.score.width,images.score.height,
+            scoreInitX-width/2,scoreInitY-height/2,width,height);
+            console.log(self.x);
+            console.log(self.y);
+            console.log('draw score pickup');
+          }
+
+          ScorePickUp.list[self.id] = self;
+          //console.log('added pickup to score list');
+          return self;
+        }
+        ScorePickUp.list = {};
+
         var identity = null;
 
         socket.on('init', function(data){
@@ -198,6 +261,12 @@
 
           for(var i = 0; i < data.bullet.length; i++)
             new Bullet(data.bullet[i]);
+
+          for(var i = 0; i < data.healths.length; i++)
+            new HealthPickUp(data.healths[i]);
+
+          for(var i = 0; i < data.scores.length; i++)
+            new ScorePickUp(data.scores[i]);
         });
 
         socket.on('update', function(data){
@@ -228,6 +297,14 @@
                 updatedBullet.y = pack.y;
             }
           }
+          for(var i = 0; i < data.healths.length; i++)
+          {
+            var pack = data.healths[i];
+            var updatedHealthPack = HealthPickUp.list[data.healths[i].id];
+            if(updatedHealthPack){
+
+            }
+          }
         });
 
         socket.on('remove', function(data){
@@ -235,6 +312,10 @@
             delete Player.list[data.player[i]];
           for( var i = 0; i < data.bullet.length; i++)
             delete Bullet.list[data.bullet[i]];
+          for( var i = 0; i < data.healths.length; i++)
+            delete HealthPickUp.list[data.healths[i]];
+          for( var i = 0; i < data.scores.length; i++)
+            delete ScorePickUp.list[data.scores[i]];
         });
 
         socket.on('showLeaderboard', function(score){
@@ -270,6 +351,14 @@
             Player.list[i].draw();
           for(var i in Bullet.list)
             Bullet.list[i].draw();
+          for(var i in HealthPickUp.list){
+            //console.log('asked to draw health');
+            HealthPickUp.list[i].draw();
+          }
+          for(var i in ScorePickUp.list){
+            //console.log('asked to draw score');
+            ScorePickUp.list[i].draw();
+          }
         },1000/60);
 
         function drawMap(){

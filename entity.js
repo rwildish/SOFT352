@@ -1,11 +1,14 @@
 
-var initPackage = {player:[],bullet:[]};
-var removePackage = {player:[],bullet:[]};
+var initPackage = {player:[],bullet:[],health:[],score:[]};
+var removePackage = {player:[],bullet:[],health:[],score:[]};
+
+var mapWidth = 2560;
+var mapHeight = 1440;
 
 Entity = function(parameters){
   var self = {
-    x:250,
-    y:250,
+    x:(2560 * Math.random()),
+    y:(1440 * Math.random()),
     speedX:0,
     speedY:0,
     id:"",
@@ -38,20 +41,30 @@ Entity.getFrameUpdateData = function(){
     initPackage:{
       player:initPackage.player,
       bullet:initPackage.bullet,
+      healths:initPackage.healths,
+      scores:initPackage.scores,
     },
     removePackage:{
       player:removePackage.player,
       bullet:removePackage.bullet,
+      healths:removePackage.healths,
+      scores:removePackage.scores,
     },
     updatePackage:{
       player:Player.update(),
       bullet:Bullet.update(),
+      healths:HealthPickUp.update(),
+      scores:ScorePickUp.update(),
     }
   };
   initPackage.player = [];
   initPackage.bullet = [];
+  initPackage.healths = [];
+  initPackage.scores = [];
   removePackage.player = [];
   removePackage.bullet = [];
+  removePackage.healths = [];
+  removePackage.scores = [];
   return pack;
 }
 
@@ -59,6 +72,7 @@ Player = function(parameters){
   var self = Entity(parameters);
   //self.id = id;
   self.number = "" + Math.floor(10 * Math.random());
+  console.log(self.number);
   self.username = parameters.username;
   self.pressingRight = false;
   self.pressingLeft = false;
@@ -139,9 +153,6 @@ self.tripleShootBullet = function(angle){
       self.speedY = self.maxSpeed;
     else
       self.speedY = 0;
-
-    var mapWidth = 2560;
-    var mapHeight = 1440;
 
     if(self.isDead === false){
     if(self.x < self.width/2)
@@ -250,14 +261,20 @@ Player.onConnect = function(socket,username){
 
 socket.on('respawnPlayer', function(){
   Player.list[socket.id].isDead = false;
-  socket.x = Math.floor(Math.random() * 2560);
-  socket.y = Math.floor(Math.random() * 1440);
+  socket.x = (2560 * Math.random());
+  console.log(socket.x);
+  socket.y = (1440 * Math.random());
+  console.log(socket.y);
+  Player.list[socket.id].x = socket.x;
+  Player.list[socket.id].y = socket.y;
 });
 
       socket.emit('init',{
         identity:socket.id,
         player:Player.getInitialPackage(),
         bullet:Bullet.getInitialPackage(),
+        healths:HealthPickUp.getInitialPackage(),
+        scores:ScorePickUp.getInitialPackage(),
       });
 }
 Player.getInitialPackage = function(){
@@ -298,6 +315,8 @@ Bullet = function(parameters){
   self.parent = parameters.parent;
   self.timer = 0;
   self.toRemove = false;
+  self.width = 85/10;
+  self.height = 85/10;
 
   var super_update = self.update;
   self.update = function(){
@@ -332,6 +351,20 @@ Bullet = function(parameters){
           self.toRemove = true;
         }
       }
+
+      if(self.x < self.width/2)
+        //self.x = self.width/2;
+        self.toRemove = true;
+      if(self.x > mapWidth - self.width/2)
+        //self.x = mapWidth - self.width/2;
+        self.toRemove = true;
+      if(self.y < self.height/2)
+        //self.y = self.height/2;
+        self.toRemove = true;
+      if(self.y > mapHeight - self.height/2)
+        //self.y = mapHeight - self.height/2;
+        self.toRemove = true;
+
   }
   self.getInitPackage = function(){
     return{
@@ -373,6 +406,183 @@ Bullet.getInitialPackage = function(){
     bullets.push(Bullet.list[i].getInitPackage());
   return bullets;
 }
+
+HealthPickUp = function(parameters){
+  var self = Entity(parameters);
+  self.id = Math.random();
+  self.width = 70;
+  self.height = 70;
+  self.toRemove = false;
+  self.timer = 0;
+
+  var super_update = self.update;
+  self.update = function(){
+      if(self.timer++  > 1000)
+        self.toRemove = true;
+      super_update();
+
+      self.spawnHealth = function(){
+
+      }
+
+      for(var i in Player.list){
+        var p = Player.list[i];
+        if(self.map === p.map && self.getDistance(p) < 35)
+        {
+          p.hp += 4;
+          if(p.hp > p.maxHp){
+            p.hp = p.maxHp;
+            console.log(p.username + " picked up a health pack! There health is now " + p.hp);
+          }
+          self.toRemove = true;
+        }
+      }
+
+      if(self.x < self.width/2)
+        self.x = self.width/2;
+      if(self.x > mapWidth - self.width/2)
+        self.x = mapWidth - self.width/2;
+      if(self.y < self.height/2)
+        self.y = self.height/2;
+      if(self.y > mapHeight - self.height/2)
+        self.y = mapHeight - self.height/2;
+    }
+    self.getInitPackage = function(){
+      return{
+        id:self.id,
+        x:self.x,
+        y:self.y,
+        map:self.map,
+      };
+    }
+    self.getUpdatePackage = function(){
+      return{
+        id:self.id,
+        x:self.x,
+        y:self.y,
+      }
+    }
+    HealthPickUp.list[self.id] = self;
+    initPackage.healths.push(self.getInitPackage());
+    for(var i in HealthPickUp.list)
+    {
+      console.log(HealthPickUp.list[i].x);
+      console.log(HealthPickUp.list[i].y);
+    }
+    return self;
+  }
+  HealthPickUp.list = {};
+
+  HealthPickUp.update = function(){
+    var pack = [];
+    for(var i in HealthPickUp.list){
+      var health = HealthPickUp.list[i];
+      health.update();
+      if(health.toRemove == true){
+        delete HealthPickUp.list[i];
+        removePackage.healths.push(health.id);
+      } else
+      pack.push(health.getUpdatePackage());
+    }
+    return pack;
+  }
+  HealthPickUp.getInitialPackage = function(){
+    var healths = [];
+    for(var i in HealthPickUp.list){
+      console.log(ScorePickUp.list[i.id]);
+      healths.push(HealthPickUp.list[i].getInitPackage());
+    }
+    return healths;
+  }
+
+
+ScorePickUp = function(parameters){
+  var self = Entity(parameters);
+  self.id = Math.random();
+  self.width = 70;
+  self.height = 70;
+  self.toRemove = false;
+  self.timer = 0;
+
+  var super_update = self.update;
+  self.update = function(){
+      if(self.timer++  > 10000)
+        self.toRemove = true;
+      super_update();
+
+      self.spawnScore = function(){
+
+      }
+
+      for(var i in Player.list){
+        var p = Player.list[i];
+        if(self.map === p.map && self.getDistance(p) < 35)
+        {
+          p.score += 10;
+          console.log(p.username + " picked up a score pack! There score is now " + p.score);
+          }
+          self.toRemove = true;
+        }
+      }
+
+      if(self.x < self.width/2)
+        self.x = self.width/2;
+      if(self.x > mapWidth - self.width/2)
+        self.x = mapWidth - self.width/2;
+      if(self.y < self.height/2)
+        self.y = self.height/2;
+      if(self.y > mapHeight - self.height/2)
+        self.y = mapHeight - self.height/2;
+
+    self.getInitPackage = function(){
+      return{
+        id:self.id,
+        x:self.x,
+        y:self.y,
+        map:self.map,
+      };
+    }
+    self.getUpdatePackage = function(){
+      return{
+        id:self.id,
+        x:self.x,
+        y:self.y,
+      }
+    }
+    ScorePickUp.list[self.id] = self;
+    initPackage.scores.push(self.getInitPackage());
+    for(var i in ScorePickUp.list)
+    {
+      console.log(ScorePickUp.list[i].x);
+      console.log(ScorePickUp.list[i].y);
+    }
+    return self;
+  }
+  ScorePickUp.list = {};
+
+  ScorePickUp.update = function(){
+    var pack = [];
+    for(var i in ScorePickUp.list){
+      var points = ScorePickUp.list[i];
+      points.update();
+      if(points.toRemove == true){
+        delete ScorePickUp.list[i];
+        removePackage.scores.push(points.id);
+      } else
+      pack.push(points.getUpdatePackage());
+    }
+    return pack;
+  }
+  ScorePickUp.getInitialPackage = function(){
+    var scores = [];
+    for(var i in ScorePickUp.list){
+      console.log(ScorePickUp.list[i.id]);
+      scores.push(ScorePickUp.list[i].getInitPackage());
+    }
+
+    return scores;
+  }
+
 
 emitScoreCall = function(user,score){
   var data = {user,score}
