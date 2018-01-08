@@ -147,7 +147,7 @@ setInterval(function() {
       map:map,
     });
     //console.log('try to spawn score pickup');
-} ,10000);
+} ,15000);
 
 setInterval(function() {
     console.log('spawning health pickup');

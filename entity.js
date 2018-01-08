@@ -502,8 +502,8 @@ ScorePickUp = function(parameters){
 
   var super_update = self.update;
   self.update = function(){
-      //if(self.timer++  > 1000000)
-        //self.toRemove = true;
+      if(self.timer++  > 1000)
+        self.toRemove = true;
       super_update();
 
       for(var i in Player.list){
@@ -511,7 +511,9 @@ ScorePickUp = function(parameters){
         if(self.map === p.map && self.getDistance(p) < 35)
         {
           p.score += 10;
+          var socket = SOCKET_LIST[p.id];
           console.log(p.username + " picked up a score pack! There score is now " + p.score);
+          socket.emit('addToChat', p.username + " has picked up a score pack! Their score is now " + p.score);
           }
           self.toRemove = true;
         }
