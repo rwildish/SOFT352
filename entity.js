@@ -517,17 +517,15 @@ ScorePickUp = function(parameters){
           }
           self.toRemove = true;
         }
+        if(self.x < self.width/2)
+          self.x = self.width/2;
+        if(self.x > mapWidth - self.width/2)
+          self.x = mapWidth - self.width/2;
+        if(self.y < self.height/2)
+          self.y = self.height/2;
+        if(self.y > mapHeight - self.height/2)
+          self.y = mapHeight - self.height/2;
       }
-
-      if(self.x < self.width/2)
-        self.x = self.width/2;
-      if(self.x > mapWidth - self.width/2)
-        self.x = mapWidth - self.width/2;
-      if(self.y < self.height/2)
-        self.y = self.height/2;
-      if(self.y > mapHeight - self.height/2)
-        self.y = mapHeight - self.height/2;
-
     self.getInitPackage = function(){
       return{
         id:self.id,
