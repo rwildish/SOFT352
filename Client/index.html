@@ -305,6 +305,14 @@
 
             }
           }
+          for(var i = 0; i < data.scores.length; i++)
+          {
+            var pack = data.scores[i];
+            var updatedScorePack = ScorePickUp.list[data.scores[i].id];
+            if(updatedScorePack){
+
+            }
+          }
         });
 
         socket.on('remove', function(data){

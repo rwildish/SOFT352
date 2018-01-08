@@ -1,6 +1,6 @@
 
-var initPackage = {player:[],bullet:[],health:[],score:[]};
-var removePackage = {player:[],bullet:[],health:[],score:[]};
+var initPackage = {player:[],bullet:[],healths:[],scores:[]};
+var removePackage = {player:[],bullet:[],healths:[],scores:[]};
 
 var mapWidth = 2560;
 var mapHeight = 1440;
@@ -421,10 +421,6 @@ HealthPickUp = function(parameters){
         self.toRemove = true;
       super_update();
 
-      self.spawnHealth = function(){
-
-      }
-
       for(var i in Player.list){
         var p = Player.list[i];
         if(self.map === p.map && self.getDistance(p) < 35)
@@ -481,7 +477,7 @@ HealthPickUp = function(parameters){
       if(health.toRemove == true){
         delete HealthPickUp.list[i];
         removePackage.healths.push(health.id);
-      } else
+      }
       pack.push(health.getUpdatePackage());
     }
     return pack;
@@ -489,7 +485,7 @@ HealthPickUp = function(parameters){
   HealthPickUp.getInitialPackage = function(){
     var healths = [];
     for(var i in HealthPickUp.list){
-      console.log(ScorePickUp.list[i.id]);
+      console.log(HealthPickUp.list[i.id]);
       healths.push(HealthPickUp.list[i].getInitPackage());
     }
     return healths;
@@ -506,13 +502,9 @@ ScorePickUp = function(parameters){
 
   var super_update = self.update;
   self.update = function(){
-      if(self.timer++  > 10000)
-        self.toRemove = true;
+      //if(self.timer++  > 1000000)
+        //self.toRemove = true;
       super_update();
-
-      self.spawnScore = function(){
-
-      }
 
       for(var i in Player.list){
         var p = Player.list[i];
@@ -563,13 +555,13 @@ ScorePickUp = function(parameters){
   ScorePickUp.update = function(){
     var pack = [];
     for(var i in ScorePickUp.list){
-      var points = ScorePickUp.list[i];
-      points.update();
-      if(points.toRemove == true){
+      var score = ScorePickUp.list[i];
+      score.update();
+      if(score.toRemove == true){
         delete ScorePickUp.list[i];
-        removePackage.scores.push(points.id);
-      } else
-      pack.push(points.getUpdatePackage());
+        removePackage.scores.push(score.id);
+      }
+      pack.push(score.getUpdatePackage());
     }
     return pack;
   }
@@ -579,7 +571,6 @@ ScorePickUp = function(parameters){
       console.log(ScorePickUp.list[i.id]);
       scores.push(ScorePickUp.list[i].getInitPackage());
     }
-
     return scores;
   }
 
