@@ -42,11 +42,13 @@ leaderboardScreen.font = '30px Arial';
 
 socket.on('addToChat',function(data){
   chatText.innerHTML += '<div>' + data + '</div>';
+  chatText.scrollTop = chatText.scrollHeight;
 });
 
 socket.on('evalAnswer',function(data){
   console.log(data);
   chatText.innerHTML += '<div>' + data + '</div>';
+  chatText.scrollTop = chatText.scrollHeight;
 })
 
 chatForm.onsubmit = function(e){
@@ -60,7 +62,7 @@ chatForm.onsubmit = function(e){
     });
   } else
     socket.emit('sendMsgToServer', chatInput.value);
-    chatInput.value = '';
+  chatInput.value = '';
 }
 
 function changeMap(){
