@@ -79,7 +79,7 @@ io.sockets.on('connection', function(socket){
     socket.on('evalServer',function(data){
       var res = eval(data);
       socket.emit('evalAnswer',res);
-    })
+    });
 
     socket.on('getLeaderboard',function(){
       getLeaderboard(function(res){

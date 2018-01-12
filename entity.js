@@ -219,63 +219,64 @@ Player.onConnect = function(socket,username){
       player.mouseAngle = data.state;
       });
 
-      socket.on('changeMap', function(data){
-        if(player.map === 'map')
-          player.map = 'map2';
-        else
-          player.map = 'map';
-      });
+  socket.on('changeMap', function(data){
+    if(player.map === 'map')
+      player.map = 'map2';
+    else
+      player.map = 'map';
+  });
 
-      socket.on('sendMsgToServer',function(data){
-        for(var i in SOCKET_LIST){
-          SOCKET_LIST[i].emit('addToChat',player.username + ': ' + data);
-        }
-      });
-
-      socket.on('sendPmToServer',function(data){
-        var pmReceiver = null;
-        for(var i in Player.list)
-          if(Player.list[i].username === data.username)
-            pmReceiver = SOCKET_LIST[i];
-        if(pmReceiver === null){
-          socket.emit('addToChat','The player ' + data.username + ' is not online');
-        } else{
-          pmReceiver.emit('addToChat','From ' + player.username + ': ' + data.message);
-          socket.emit('addToChat','To ' + data.username + ': ' + data.message);
-        }
-      });
-
-      EmitSurvivalTime = function(data){
-        var pmReceiver = SOCKET_LIST[data]
-        pmReceiver.emit('addToChat','You survived for ' + Player.list[data].lastSurvivalTime + ' seconds');
-        for(var i in SOCKET_LIST)
-        {
-          if(SOCKET_LIST[i] !== SOCKET_LIST[data])
-          {
-            //potential to add to chat the players current high score or if they get a new high score
-            //potential to check for players only on the same map
-            SOCKET_LIST[i].emit('addToChat', Player.list[data].username + ' has died. They survived for ' + Player.list[data].lastSurvivalTime + ' seconds');
-          }
-        }
+  socket.on('sendMsgToServer',function(data){
+    for(var i in SOCKET_LIST){
+      SOCKET_LIST[i].emit('addToChat',player.username + ': ' + data);
     }
+  });
 
-socket.on('respawnPlayer', function(){
-  Player.list[socket.id].isDead = false;
-  socket.x = (2560 * Math.random());
-  console.log(socket.x);
-  socket.y = (1440 * Math.random());
-  console.log(socket.y);
-  Player.list[socket.id].x = socket.x;
-  Player.list[socket.id].y = socket.y;
-});
+  socket.on('sendPmToServer',function(data){
+  var pmReceiver = null;
+    for(var i in Player.list)
+      if(Player.list[i].username === data.username)
+        pmReceiver = SOCKET_LIST[i];
+    if(pmReceiver === null){
+      socket.emit('addToChat','The player ' + data.username + ' is not online');
+    } else{
+      pmReceiver.emit('addToChat','From ' + player.username + ': ' + data.message);
+      socket.emit('addToChat','To ' + data.username + ': ' + data.message);
+    }
+  });
 
-      socket.emit('init',{
-        identity:socket.id,
-        player:Player.getInitialPackage(),
-        bullet:Bullet.getInitialPackage(),
-        healths:HealthPickUp.getInitialPackage(),
-        scores:ScorePickUp.getInitialPackage(),
-      });
+  EmitSurvivalTime = function(data){
+    var pmReceiver = SOCKET_LIST[data]
+    pmReceiver.emit('addToChat','You survived for ' + Player.list[data].lastSurvivalTime + ' seconds');
+    for(var i in SOCKET_LIST)
+    {
+      if(SOCKET_LIST[i] !== SOCKET_LIST[data])
+      {
+        //potential to add to chat the players current high score or if they get a new high score
+        //potential to check for players only on the same map
+        SOCKET_LIST[i].emit('addToChat', Player.list[data].username + ' has died. They survived for '
+        + Player.list[data].lastSurvivalTime + ' seconds, and got a score of ' + Player.list[data].score );
+      }
+    }
+  }
+
+  socket.on('respawnPlayer', function(){
+    Player.list[socket.id].isDead = false;
+    socket.x = (2560 * Math.random());
+    console.log(socket.x);
+    socket.y = (1440 * Math.random());
+    console.log(socket.y);
+    Player.list[socket.id].x = socket.x;
+    Player.list[socket.id].y = socket.y;
+  });
+
+  socket.emit('init',{
+    identity:socket.id,
+    player:Player.getInitialPackage(),
+    bullet:Bullet.getInitialPackage(),
+    healths:HealthPickUp.getInitialPackage(),
+    scores:ScorePickUp.getInitialPackage(),
+  });
 }
 Player.getInitialPackage = function(){
   var players = [];
